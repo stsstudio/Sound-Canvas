@@ -794,8 +794,8 @@ function drawRuler() {
   g.fillStyle = '#ece6d8';
   g.fillRect(0, 0, w, h);
   const pps = state.pps, off = state.viewOff;
-  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60];
-  let step = steps.find((s) => s * pps >= 46) || 120;
+  const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+  let step = steps.find((s) => s * pps >= 46) || steps[steps.length - 1];
   g.fillStyle = '#7a7466';
   g.strokeStyle = '#b9b2a1';
   g.font = '10px "M PLUS Rounded 1c", sans-serif';
@@ -901,10 +901,12 @@ $('hscrollbar').addEventListener('scroll', () => {
 });
 
 /* ================= ズーム（ボタン／ホイール／ピンチ／全体表示） ================= */
+const MIN_PPS = 0.01; // 最大縮小時の1秒あたりピクセル数（長時間録音でも全体表示できるよう非常に小さい値に設定）
+const MAX_PPS = 400;  // 最大拡大時の1秒あたりピクセル数
 function zoomAt(px, factor) {
   const rect = $('rulerCanvas').getBoundingClientRect();
   const sec = (state.viewOff + px) / state.pps;
-  state.pps = clamp(state.pps * factor, 4, 400);
+  state.pps = clamp(state.pps * factor, MIN_PPS, MAX_PPS);
   state.viewOff = clamp(sec * state.pps - px, 0, Math.max(0, contentWidth() - rect.width));
   updateSpacer(); drawRuler(); drawAllLanes();
 }
@@ -912,7 +914,7 @@ function setZoom(mul) { zoomAt($('rulerCanvas').clientWidth / 2, mul); }
 function zoomFit() {
   const w = $('rulerCanvas').clientWidth;
   const dur = projectDur();
-  state.pps = clamp(w / (dur + 1), 4, 400);
+  state.pps = clamp(w / (dur + 1), MIN_PPS, MAX_PPS);
   state.viewOff = 0;
   refreshAll();
 }
@@ -960,7 +962,7 @@ window.__pinching = false;
     if (window.__pinching && touchPts.size === 2 && startDist > 10) {
       const factor = dist() / startDist;
       const rect = $('rulerCanvas').getBoundingClientRect();
-      state.pps = clamp(startPps * factor, 4, 400);
+      state.pps = clamp(startPps * factor, MIN_PPS, MAX_PPS);
       const pts = [...touchPts.values()];
       const midX = (pts[0].x + pts[1].x) / 2 - rect.left;
       state.viewOff = clamp(centerSec * state.pps - midX, 0, Math.max(0, contentWidth() - rect.width));
